@@ -535,7 +535,45 @@ mn.dt5.plot<-ggplot(dt5.sum, aes(x=shock.stage, y=dt5, color=shock.stage))
 mn.dt5.plot+geom_point(size=5
 )+geom_errorbar(aes(ymin=dt5-se, ymax=dt5+se),
                 width=.3, 
-                size=1)
+                size=1
+)+labs(x="Shock Stage", y="Time to emergence from 5th")
+
+
+
+#plotting time to emergence for host lifespan
+
+ttemh.plot<-ggplot(rhs, aes(x=shock.stage, y=ttem.h, color=shock.stage))
+ttemh.plot+geom_jitter()
+
+ttemh.sum<-summarySE(rhs, measurevar = "ttem.h",
+                     groupvars = "shock.stage",
+                     na.rm = TRUE)
+ttemh.sum
+
+ttemhsum.plot<-ggplot(ttemh.sum, aes(x=shock.stage, y=ttem.h, color=shock.stage))
+ttemhsum.plot+geom_point(size=3
+)+geom_errorbar(aes(ymin=ttem.h-se, ymax=ttem.h+se)
+)+labs(y="Time from Hatching to Emergence", x="Shock Stage")
+
+
+
+#plotting time to emergence for wasp life span (ovp to emergence)
+
+ttemw.plot<-ggplot(rhs, aes(x=shock.stage, y=ttem.w, color=shock.stage))
+ttemw.plot+geom_jitter()
+
+
+ttemw.sum<-summarySE(rhs, measurevar = "ttem.w",
+                     groupvars = "shock.stage",
+                     na.rm = TRUE)
+ttemw.sum
+
+
+ttemwsum.plot<-ggplot(ttemw.sum, aes(x=shock.stage, y=ttem.w, color=shock.stage))
+ttemwsum.plot+geom_point(size=3
+)+geom_errorbar(aes(ymin=ttem.w-se, ymax=ttem.w+se)
+)+labs(y="Time from Oviposition to Emergence", x="Shock Stage")
+
 
 
 #Boxplot of dt5

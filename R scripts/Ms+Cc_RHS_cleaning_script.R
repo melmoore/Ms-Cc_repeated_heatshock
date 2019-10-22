@@ -16,9 +16,8 @@ library(extrafont)
 
 #load data files
 
-rhs <- read_csv("data files/Ms+Cc_RHS_incomp_12-21-18.csv", 
-                col_types = cols(shock.stage = col_factor(levels = c("control", 
-                                                                     "early", "mid", "late"))))
+rhs <- read_csv("data files/Ms-Cc_RHS_incomp_10-22-19.csv", 
+                col_types = cols(shock.stage = col_factor(levels = c("control","early", "mid", "late"))))
 View(rhs)
 
 #---------------------
@@ -132,8 +131,6 @@ rhs$ttecl<-rhs$date.ecl.j-rhs$date.ovp.j
 #-------------------------
 
 #Calculate wasp metrics
-
-
 
 #Calculate percent survival
 

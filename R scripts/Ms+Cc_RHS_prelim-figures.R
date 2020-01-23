@@ -15,18 +15,18 @@ library(extrafont)
 
 #load data file
 
-rhs <- read_csv("data files/Ms+Cc_RHS_incomplete_clean.csv", 
+rhs <- read_csv("data files/Ms+Cc_RHS_complete_clean.csv", 
                 col_types = cols(shock.stage = col_factor(levels = c("control", 
                                                                      "early", "mid", "late"))))
 View(rhs)
 
 
-rhs.vlong <- read_csv("data files/Ms+Cc_RHS_incomp_clean_vlong.csv", 
+rhs.vlong <- read_csv("data files/Ms+Cc_RHS_comp_clean_vlong.csv", 
                       col_types = cols(shock.stage = col_factor(levels = c("control", 
                                                                            "early", "mid", "late"))))
 View(rhs.vlong)
 
-rhs.long<- read_csv("data files/Ms+Cc_RHS_incomp_clean_long.csv", 
+rhs.long<- read_csv("data files/Ms+Cc_RHS_comp_clean_long.csv", 
             col_types = cols(shock.stage = col_factor(levels = c("control", 
                                                                  "early", "mid", "late"))))
 
@@ -116,6 +116,40 @@ awsm.sum.plot+geom_point(aes(shape=sex),
                      label=c("Female", "Male"))
 
 
+
+
+
+#plotting adult mass, separating out late treatment that had a low heat shock
+
+awsm.low.sum<-summarySE(rhs.wam, measurevar = "ad.mass",
+                    groupvars = c("shock.stage", "hs.cal", "sex"),
+                    na.rm=TRUE)
+awsm.low.sum
+
+
+#plotting mean of wasp adult mass by shock treatment
+
+awsm.low.sum.plot<-ggplot(awsm.low.sum, aes(x=shock.stage, y=ad.mass, group=interaction(sex, hs.cal), color=sex))
+awsm.low.sum.plot+geom_point(aes(shape=hs.cal),
+                         size=5
+)+geom_line(aes(linetype=sex),
+            size=1.2
+)+geom_errorbar(aes(ymin=ad.mass-se, ymax=ad.mass+se),
+                width=.3, size=1
+)+scale_color_manual(values=c("black","red"),
+                     name="Sex",
+                     label=c("Female", "Male")
+)+scale_linetype_manual(values=c("solid", "dashed"),
+                        name="Sex",
+                        label=c("Female", "Male")
+)+scale_shape_manual(values=c(16, 17, 18),
+                     name="heat shock temp")
+
+
+
+
+
+
 #-----------------------
 
 #prelim plots of wasp survival to eclosion
@@ -155,17 +189,7 @@ psecl.plot2+geom_point(
 
 #mean wasp survival to eclosion
 
-#subsetting out undissected cats, but keeping early treatment
-
-rhs$tot.unem[is.na(rhs$tot.unem)]<-0
-rhs$ps.ecl[is.na(rhs$ps.ecl)]<-0
-
-rhs$keep.edis<-ifelse(rhs$shock.stage=="early", 1,
-                      ifelse(rhs$shock.stage!="early" & rhs$tot.unem>0, 1, 0))
-
-rhs.edis<-subset(rhs, keep.edis=="1")
-
-psecl.sum<-summarySE(rhs.edis, measurevar = "ps.ecl",
+psecl.sum<-summarySE(rhs, measurevar = "ps.ecl",
                      groupvars = "shock.stage",
                      na.rm = TRUE)
 psecl.sum
@@ -210,27 +234,27 @@ psecl.sum.plot+geom_point(aes(shape=hs),
 
 #ps.ecl (for dissected hosts) boxplot of raw data
 
-psecl.boxplot<-ggplot(rhs.edis, aes(x=shock.stage, y=ps.ecl, fill=shock.stage))
+psecl.boxplot<-ggplot(rhs, aes(x=shock.stage, y=ps.ecl, fill=shock.stage))
 psecl.boxplot+geom_boxplot()
 
 
 #plotting ps.ecl by sex
   ##sex by total load
 
-rhs.edis$ps.ecl.totm<-rhs.edis$male.ecl/rhs.edis$tot.load
-rhs.edis$ps.ecl.totf<-rhs.edis$fem.ecl/rhs.edis$tot.load
+rhs$ps.ecl.totm<-rhs$male.ecl/rhs$tot.load
+rhs$ps.ecl.totf<-rhs$fem.ecl/rhs$tot.load
 
-rhs.edis.tot<-gather(rhs.edis, sex, surv, ps.ecl.totf, ps.ecl.totm)
+rhs.tot<-gather(rhs, sex, surv, ps.ecl.totf, ps.ecl.totm)
 
-rhs.edis.tot$surv[is.na(rhs.edis.tot$surv)]<-0
+rhs.tot$surv[is.na(rhs.tot$surv)]<-0
 
-pseclsex.plot<-ggplot(rhs.edis.tot, aes(x=shock.stage, y=surv, group=sex, color=sex))
+pseclsex.plot<-ggplot(rhs.tot, aes(x=shock.stage, y=surv, group=sex, color=sex))
 pseclsex.plot+geom_jitter()
 
 
 #mean ps.ecl by sex
 
-psecl.sex.sum<-summarySE(rhs.edis.tot, measurevar = "surv",
+psecl.sex.sum<-summarySE(rhs.tot, measurevar = "surv",
                          groupvars = c("shock.stage", "sex"),
                          na.rm=TRUE)
 psecl.sex.sum
@@ -362,14 +386,14 @@ numecl.plot+geom_point(aes(shape=sex),
 #plotting the mean proportions of wasp stages by total load in a bar plot (like class prop plot)
 
 #creating column of wasps that emerged, but failed to eclose as adults
-rhs.edis$fail.ecl<-rhs.edis$num.em-rhs.edis$num.ecl
+rhs$fail.ecl<-rhs$num.em-rhs$num.ecl
 
-rhs.edis.lng<-gather(rhs.edis, wasp.stage, wasp.num, tot.unem, fail.ecl, num.ecl)
+rhs.lng<-gather(rhs, wasp.stage, wasp.num, tot.unem, fail.ecl, num.ecl)
 
-rhs.edis.lng$wasp.stage<-factor(rhs.edis.lng$wasp.stage, levels=c("tot.unem", "fail.ecl", "num.ecl"))
+rhs.lng$wasp.stage<-factor(rhs.lng$wasp.stage, levels=c("tot.unem", "fail.ecl", "num.ecl"))
 
 
-wstage.sum<-summarySE(rhs.edis.lng, measurevar = "wasp.num",
+wstage.sum<-summarySE(rhs.lng, measurevar = "wasp.num",
                       groupvars = c("shock.stage", "wasp.stage"),
                       na.rm = TRUE)
 wstage.sum
@@ -434,17 +458,17 @@ wstage.plot+geom_bar(position="fill",stat="identity"
 #---------------
 #plotting sex ratio by shock stage--does not seem different between treatments
 
-rhs.edis$fem.ecl[is.na(rhs.edis$fem.ecl)]<-0
-rhs.edis$male.ecl[is.na(rhs.edis$male.ecl)]<-0
+rhs$fem.ecl[is.na(rhs$fem.ecl)]<-0
+rhs$male.ecl[is.na(rhs$male.ecl)]<-0
 
-rhs.edis$fem.rat<-rhs.edis$fem.ecl/rhs.edis$male.ecl
+rhs$fem.rat<-rhs$fem.ecl/rhs$male.ecl
 
-rhs.edis$fem.rat[is.nan(rhs.edis$fem.rat)]<-0
+rhs$fem.rat[is.nan(rhs$fem.rat)]<-0
 
-femrat.plot<-ggplot(rhs.edis, aes(x=shock.stage, y=fem.rat, color=shock.stage))
+femrat.plot<-ggplot(rhs, aes(x=shock.stage, y=fem.rat, color=shock.stage))
 femrat.plot+geom_jitter()
 
-femrat.boxplot<-ggplot(rhs.edis, aes(x=shock.stage, y=fem.rat, fill=shock.stage))
+femrat.boxplot<-ggplot(rhs, aes(x=shock.stage, y=fem.rat, fill=shock.stage))
 femrat.boxplot+geom_boxplot()
 
 
@@ -485,8 +509,6 @@ nem.plot3+geom_point(
 #-------------------
 
 #calculating the percent of mature and immature 2nds
-
-rhs$tot.unem<-rhs$num.unem.mat+rhs$num.unem.im
 
 rhs$p.unem.mat<-rhs$num.unem.mat/rhs$tot.unem
 rhs$p.unem.im<-rhs$num.unem.im/rhs$tot.unem
@@ -588,7 +610,7 @@ ne.dt5.plot+geom_jitter(
 )+geom_smooth(method=lm)
 
 #plotting ps.em by dt5
-psem.dt5.plot<-ggplot(rhs.dis, aes(x=dt5, y=ps.em, group=shock.stage, color=shock.stage))
+psem.dt5.plot<-ggplot(rhs, aes(x=dt5, y=ps.em, group=shock.stage, color=shock.stage))
 psem.dt5.plot+geom_jitter(
 )+geom_smooth(method=lm)
 
@@ -602,6 +624,9 @@ psecl.dt5.plot+geom_jitter(
 #------------------------------
 
 #plotting mass by age for parasitized hosts
+
+#make mass numeric
+rhs.long$mass <- as.numeric(rhs.long$mass)
 
 #removing an individual with a typo in mass
 

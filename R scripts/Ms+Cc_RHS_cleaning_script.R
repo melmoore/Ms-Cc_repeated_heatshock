@@ -16,10 +16,10 @@ library(extrafont)
 
 #load data files
 
-rhs <- read_csv("data files/Ms-Cc_RHS_incomp_10-22-19.csv", 
-                col_types = cols(shock.stage = col_factor(levels = c("control","early", "mid", "late"))))
+rhs <- read_csv("data files/Ms-Cc_RHS_comp_1-23-20.csv", 
+                col_types = cols(shock.stage = col_factor(levels = c("control", 
+                                                                     "early", "mid", "late"))))
 View(rhs)
-
 #---------------------
 
 
@@ -100,7 +100,8 @@ rhs[rhs=="#N/A"]<-NA
 
 #---------------------
 
-#For "lates" that had emergence in the 4th instar (and therefor before being shocked), changing treatment to "control"
+#For "lates" that had emergence in the 4th instar (and therefor before being shocked), 
+#changing treatment to "control"
 
 rhs$instar.em[is.na(rhs$instar.em)]<-0
 
@@ -131,6 +132,9 @@ rhs$ttecl<-rhs$date.ecl.j-rhs$date.ovp.j
 #-------------------------
 
 #Calculate wasp metrics
+
+#convert tot.load to a numeric
+rhs$tot.load <- as.numeric(rhs$tot.load)
 
 #Calculate percent survival
 
@@ -207,9 +211,9 @@ rhs.lng2<-merge(mss.lng2, age.lng2, by=c("id", "shock.stage","instar"))
 
 #write to csv
 
-write.csv(rhs, "Ms+Cc_RHS_incomplete_clean.csv",row.names = FALSE)
-write.csv(rhs.lng, "Ms+Cc_RHS_incomp_clean_vlong.csv", row.names=FALSE)
-write.csv(rhs.lng2,"Ms+Cc_RHS_incomp_clean_long.csv", row.names=FALSE)
+write.csv(rhs, "Ms+Cc_RHS_complete_clean.csv",row.names = FALSE)
+write.csv(rhs.lng, "Ms+Cc_RHS_comp_clean_vlong.csv", row.names=FALSE)
+write.csv(rhs.lng2,"Ms+Cc_RHS_comp_clean_long.csv", row.names=FALSE)
 
 
 

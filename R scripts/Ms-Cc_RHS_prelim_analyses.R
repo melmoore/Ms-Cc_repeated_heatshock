@@ -484,3 +484,55 @@ gam_rl_plot+geom_point(size=3, shape=1
 
 
 
+#----------------------------
+
+#Looking at knot specification and degrees of freedom for the GAMM model with age and load in 
+#separate smooths
+
+
+#GAMM model, k=10
+gam_mass_mod_noint <- gam(log_mass ~ s(age, by=shock.stage, k=10, bs="ts")
+                          + s(tot.load, by=shock.stage, k=10, bs="ts") + s(id, bs="re")
+                          + shock.stage, method="ML", data=rhs_modl, na.action = na.omit)
+
+gam.check(gam_mass_mod_noint)
+
+
+#trying to follow the troubleshooting example in the ?choose.k help page
+plot(gam_mass_mod_noint,pages=1,residuals=TRUE) 
+
+
+#test residuals against each smooth to see if one needs to have the k adjusted
+gam(gam_resid ~ s(age, by=shock.stage, k=20, bs="ts")+ s(id, bs="re")
+    + shock.stage, method="ML", data=rhs_modl, na.action = na.omit)
+
+gam(gam_resid ~ s(tot.load, by=shock.stage, k=20, bs="ts") + s(id, bs="re")
+    + shock.stage, method="ML", data=rhs_modl, na.action = na.omit)
+
+
+
+#GAMM model, k=20 for both smooths
+#smooth with load looks ok, did not change. Age improved, try increasing the k again.
+gammss_mod_ni_1 <- gam(log_mass ~ s(age, by=shock.stage, k=20, bs="ts")
+                          + s(tot.load, by=shock.stage, k=20, bs="ts") + s(id, bs="re")
+                          + shock.stage, method="ML", data=rhs_modl, na.action = na.omit)
+
+gam.check(gammss_mod_ni_1)
+
+
+#GAMM model, k=30 for age, k=10 for load
+gammss_mod_ni_2 <- gam(log_mass ~ s(age, by=shock.stage, k=30, bs="ts")
+                       + s(tot.load, by=shock.stage, k=10, bs="ts") + s(id, bs="re")
+                       + shock.stage, method="ML", data=rhs_modl, na.action = na.omit)
+
+gam.check(gammss_mod_ni_2)
+
+
+
+#GAMM model, k=40 for age, k=10 for load--this one throws an error message
+gammss_mod_ni_3 <- gam(log_mass ~ s(age, by=shock.stage, k=40, bs="ts")
+                       + s(tot.load, by=shock.stage, k=10, bs="ts") + s(id, bs="re")
+                       + shock.stage, method="ML", data=rhs_modl, na.action = na.omit)
+
+gam.check(gammss_mod_ni_3)
+

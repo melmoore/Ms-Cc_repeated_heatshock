@@ -43,6 +43,9 @@ rhs.long<- read_csv("data files/Ms+Cc_RHS_comp_clean_long.csv",
 fem.adwmass.plot<-ggplot(rhs, aes(x=shock.stage, y=ind.fem.mass, color=shock.stage))
 fem.adwmass.plot+geom_jitter()
 
+fem.adwmss.bp <- ggplot(rhs, aes(x=shock.stage, y=ind.fem.mass, fill=shock.stage))
+fem.adwmss.bp + geom_boxplot()
+
 male.adwmass.plot<-ggplot(rhs, aes(x=shock.stage, y=ind.male.mass, color=shock.stage))
 male.adwmass.plot+geom_jitter()
 

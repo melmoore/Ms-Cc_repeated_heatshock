@@ -536,3 +536,70 @@ gammss_mod_ni_3 <- gam(log_mass ~ s(age, by=shock.stage, k=40, bs="ts")
 
 gam.check(gammss_mod_ni_3)
 
+
+#----------------
+
+#looking at whether incidence of wanderers differs between treatments
+
+#remove individuals that died before molt to 5th
+rhs_cl <- subset(rhs, died.bf5==0)
+
+#create "class" column indicating whether the individual wandered, had emergence, or was a WOWE
+rhs_cl$date.em.j[is.na(rhs_cl$date.em.j)]<-0
+rhs_cl$date.cull.j[is.na(rhs_cl$date.cull.j)]<-0
+rhs_cl$date.wand.j[is.na(rhs_cl$date.wand.j)]<-0
+rhs_cl$num.em[is.na(rhs_cl$num.em)]<-0
+
+
+rhs_cl$class<-ifelse(rhs_cl$date.em.j>0 | rhs_cl$num.em>0, "em",
+                     ifelse(rhs_cl$date.cull.j>0, "mongo",
+                            ifelse(rhs_cl$date.wand.j>0, "wand", "unk")))
+
+#remove individuals with class "unk"
+rhs_cl <- subset(rhs_cl, class!="unk")
+
+#create binary column where 1 indicates wandering and 0 indicates other outcome (em or WOWE)
+rhs_cl$bin_wand <- ifelse(rhs_cl$class=="wand", 1, 0)
+
+
+#glm analyzing incidence of wandering between shock stages--if I'm interpreting this correctly, there are
+#fewer incidents of wanderers at the control than the shocked treatments
+wand_mod <- glm(bin_wand ~ shock.stage,
+                family = binomial,
+                data = rhs_cl,
+                na.action = na.omit)
+
+summary(wand_mod)
+
+
+#---------------
+
+#removing wanderers for a quick and dirty analysis of outcomes for the other treatments
+rhs_nw <- subset(rhs_cl, class!="wand")
+
+
+#creating a binary class column--emergence = 1, WOWE = 0
+rhs_nw$bin_class <- ifelse(rhs_nw$class=="em", 1, 0)
+
+
+#glm analyzing occurence of emergence vs WOWE between shock stage treatments
+class_mod <- glm(bin_class ~ shock.stage,
+                 family = binomial,
+                 data = rhs_nw,
+                 na.action = na.omit)
+
+summary(class_mod)
+
+
+
+
+
+
+
+
+
+
+
+
+
+

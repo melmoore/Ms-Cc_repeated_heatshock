@@ -394,7 +394,8 @@ lmss_ra_plot+geom_point(shape=1, size=3
 
 #-------------------------
 
-#analyzing the effects of shock stage and on host mass and development time--not including load, since it has no impact on early treatment group
+#analyzing the effects of shock stage and on host mass and development time--not including load, since it has 
+#no impact on early treatment group
 #will do separate analysis on other shock groups to see the effect of load
 
 #GAMM MODEL
@@ -536,6 +537,83 @@ gam_ml_nointk_mod <- gam(log_mass ~ s(age, by=shock.stage, k=20, bs="ts")
                         + shock.stage, method="ML", data=rhs_ne, na.action = na.omit)
 
 gam.check(gam_ml_nointk_mod)
+
+
+#--------------------------
+
+#trying gamm including load and shock stage with all shock stages...see if it works
+
+#subset to only terms used in the model, drop NAs
+rhs_mod <- select(rhs_long, id, shock.stage, tot.load, instar, log_mass, age)
+rhs_mod <- drop_na(rhs_mod)
+
+#make id a factor so it will work as a random effect in the GAMM model
+rhs_mod$id<-as.factor(rhs_mod$id)
+
+
+#run a full GAMM model--age and load in same smooth
+gam_mass_mod2<-gam(log_mass ~ s(age, tot.load, by= shock.stage, k=90, bs="ts") + s(id, bs="re") + shock.stage,
+                  method="ML", data=rhs_mod, na.action = na.omit)
+
+anova(gam_mass_mod2)
+summary(gam_mass_mod2)
+
+
+
+#run a full GAMM model--age and load in diff smooth
+gam_mass_noint_mod2<-gam(log_mass ~ s(age, by= shock.stage, k=34, bs="ts")
+                         + s(tot.load, by= shock.stage, bs="ts")
+                         + s(id, bs="re") + shock.stage,
+                   method="ML", data=rhs_mod, na.action = na.omit)
+
+anova(gam_mass_noint_mod2)
+summary(gam_mass_noint_mod2)
+
+
+anova(gam_mass_mod2, gam_mass_noint_mod2, test="Chisq")
+AIC(gam_mass_mod2, gam_mass_noint_mod2)
+
+
+gam.check(gam_mass_mod2)
+gam.check(gam_mass_noint_mod2)
+
+
+#look at model fit
+rhs_mod$l_pred <- predict(gam_mass_noint_mod2, level=0)
+rhs_mod$l_resid <- residuals(gam_mass_noint_mod2, level=0)
+
+
+#gam model predict fit against actual data
+gamml_noint_pred_fit <- ggplot(rhs_mod, aes(x=age, y=log_mass, group = id, color=shock.stage))
+gamml_noint_pred_fit + geom_point(shape=1, size=3
+)+geom_line(data=rhs_mod, aes(x=age, y=l_pred)
+)+facet_wrap(~shock.stage)
+
+
+
+#gam model pred against resid
+gamml_noint_pr_plot <- ggplot(rhs_mod, aes(x=l_pred, y=l_resid, color=shock.stage))
+gamml_noint_pr_plot + geom_point(size=3, shape=1
+)+geom_hline(aes(yintercept=0),
+             size=1.5, color="black", linetype="dashed")
+
+
+
+#gam model residuals against age
+gamml_noint_ra_plot <- ggplot(rhs_mod, aes(x=age, y=l_resid, color=shock.stage))
+gamml_noint_ra_plot+geom_point(size=3, shape=1
+)+geom_hline(aes(yintercept=0),
+             size=1.5, color="black", linetype="dashed")
+
+
+#gam model residuals against load
+gamml_noint_rl_plot <- ggplot(rhs_mod, aes(x=tot.load, y=l_resid, color=shock.stage))
+gamml_noint_rl_plot+geom_point(size=3, shape=1
+)+geom_hline(aes(yintercept=0),
+             size=1.5, color="black", linetype="dashed")
+
+
+
 
 
 #----------------------------

@@ -11,6 +11,7 @@ library(dplyr)
 library(nlme)
 library(lme4)
 library(mgcv)
+library(MuMIn)
 
 
 #load data
@@ -86,46 +87,41 @@ summary(waspsurv_re_mod)
 
 
 
+#model selection using dredge() 
+
+#dredge requires dataframe with no NAs--subsetting to only columns in the model
+rhs_wwd <- select(rhs_ww, id, shock.stage, resc.load, tot.died, num.ecl)
+rhs_wwd <- drop_na(rhs_wwd)
+
+waspsurv_re_mod_fd <- glmer(cbind(tot.died, num.ecl) ~ shock.stage * resc.load + (1|id),
+                         family = "binomial",
+                         data = rhs_wwd,
+                         na.action = na.fail)
+
+
+ws_mod_dredge <- dredge(waspsurv_re_mod_fd)
+ws_mod_dredge
+
+
+#best model according to dredge
+ws_mod_d <- glmer(cbind(tot.died, num.ecl) ~ shock.stage + (1|id),
+                     family = "binomial",
+                     data = rhs_ww,
+                     na.action = na.omit) 
+
+
+
 #test fixed effects
 
-waspsurv_re_mod_stage <- glmer(cbind(tot.died, num.ecl) ~ shock.stage + (1|id),
-                               family = "binomial",
-                               data = rhs_ww,
-                               na.action = na.omit)
+ws_re_mod_ss <- glmer(cbind(tot.died, num.ecl) ~ + (1|id),
+                         family = "binomial",
+                         data = rhs_ww,
+                         na.action = na.omit)
 
-waspsurv_re_mod_load <- glmer(cbind(tot.died, num.ecl) ~ resc.load + (1|id),
-                              family = "binomial",
-                              data = rhs_ww,
-                              na.action = na.omit)
 
-waspsurv_re_mod_int <- glmer(cbind(tot.died, num.ecl) ~ shock.stage:resc.load + (1|id),
-                             family = "binomial",
-                             data = rhs_ww,
-                             na.action = na.omit)
 
-waspsurv_re_mod_null <- glmer(cbind(tot.died, num.ecl) ~ 1 + (1|id),
-                              family = "binomial",
-                              data = rhs_ww,
-                              na.action = na.omit)
+anova(ws_mod_d_ld, ws_re_mod_ss)
 
-waspsurv_re_mod_add <- glmer(cbind(tot.died, num.ecl) ~ shock.stage + resc.load + (1|id),
-                             family = "binomial",
-                             data = rhs_ww,
-                             na.action = na.omit)
-summary(waspsurv_re_mod_add)
-
-#seems like shock stage has strong effects, load has weak effects, no effect of interaction
-#additive model does not seem significantly different than the full model
-#model with just shock stage not significantly different than additive model--so maybe just do that one
-
-anova(waspsurv_re_mod_null, waspsurv_re_mod, waspsurv_re_mod_stage, waspsurv_re_mod_load,
-      waspsurv_re_mod_int, waspsurv_re_mod_add)
-
-anova(waspsurv_re_mod, waspsurv_re_mod_add)
-anova(waspsurv_re_mod_add, waspsurv_re_mod_stage)
-
-AIC(waspsurv_re_mod_null, waspsurv_re_mod, waspsurv_re_mod_stage, waspsurv_re_mod_load,
-    waspsurv_re_mod_int, waspsurv_re_mod_add)
 
 
 
@@ -142,44 +138,35 @@ anova(wemsurv_re_mod)
 summary(wemsurv_re_mod)
 
 
-#test fixed effects
+#model selection using dredge() 
 
-wemsurv_re_mod_null <- glmer(cbind(num.em, tot.unem) ~ 1 + (1|id),
+#dredge requires dataframe with no NAs--subsetting to only columns in the model
+rhs_wwd_em <- select(rhs_ww, id, shock.stage, resc.load, num.em, tot.unem)
+rhs_wwd_em <- drop_na(rhs_wwd_em)
+
+wemsurv_re_mod_fd <- glmer(cbind(num.em, tot.unem) ~ shock.stage * resc.load + (1|id),
                             family = "binomial",
-                            data = rhs_ww,
-                            na.action = na.omit)
+                            data = rhs_wwd_em,
+                            na.action = na.fail)
 
-wemsurv_re_mod_shock <- glmer(cbind(num.em, tot.unem) ~ shock.stage + (1|id),
-                              family = "binomial",
-                              data = rhs_ww,
-                              na.action = na.omit)
+wems_mod_dredge <- dredge(wemsurv_re_mod_fd)
+wems_mod_dredge
 
 
-wemsurv_re_mod_load <- glmer(cbind(num.em, tot.unem) ~ resc.load + (1|id),
-                             family = "binomial",
-                             data = rhs_ww,
-                             na.action = na.omit)
+#best model according to dredge
+wems_mod_d <- glmer(cbind(num.em, tot.unem) ~ shock.stage + (1|id),
+                    family = "binomial",
+                    data = rhs_ww,
+                    na.action = na.omit)
 
 
-wemsurv_re_mod_int <- glmer(cbind(num.em, tot.unem) ~ shock.stage:resc.load + (1|id),
-                            family = "binomial",
-                            data = rhs_ww,
-                            na.action = na.omit)
 
+wems_mod_ss <- glmer(cbind(num.em, tot.unem) ~  (1|id),
+                     family = "binomial",
+                     data = rhs_ww,
+                     na.action = na.omit)
 
-wemsurv_re_mod_add <- glmer(cbind(num.em, tot.unem) ~ shock.stage + resc.load + (1|id),
-                            family = "binomial",
-                            data = rhs_ww,
-                            na.action = na.omit)
-
-
-#similar to survival to eclosion, the model with just shock stage seems like the best
-
-anova(wemsurv_re_mod_null, wemsurv_re_mod, wemsurv_re_mod_shock, wemsurv_re_mod_load,
-      wemsurv_re_mod_int, wemsurv_re_mod_add)
-
-AIC(wemsurv_re_mod_null, wemsurv_re_mod, wemsurv_re_mod_shock, wemsurv_re_mod_load,
-    wemsurv_re_mod_int, wemsurv_re_mod_add)
+anova(wems_mod_d, wems_mod_ss)
 
 
 #-------------------------
@@ -200,6 +187,27 @@ waspmss_re_mod <- lme(ad.mass ~ shock.stage * sex * tot.load,
                       na.action = na.omit)
 anova(waspmss_re_mod)
 summary(waspmss_re_mod)
+
+
+
+#model selection using dredge() 
+
+#dredge requires dataframe with no NAs--subsetting to only columns in the model
+rhs_wamd <- select(rhs_wam, id, shock.stage, sex, tot.load, ad.mass)
+rhs_wamd <- drop_na(rhs_wamd)
+
+
+wmss_mod_d <- lme(ad.mass ~ shock.stage * sex * tot.load,
+                       random = ~1|id,
+                       method = "ML",
+                       data = rhs_wamd,
+                       na.action = na.fail)
+
+wmss_mod_dredge <- dredge(wmss_mod_d)
+wmss_mod_dredge
+
+#best model is full model
+
 
 
 #raw data plot
@@ -386,102 +394,148 @@ lmss_ra_plot+geom_point(shape=1, size=3
 
 #-------------------------
 
-#analyzing the effects of shock stage and load on host mass and development time 
+#analyzing the effects of shock stage and on host mass and development time--not including load, since it has no impact on early treatment group
+#will do separate analysis on other shock groups to see the effect of load
 
 #GAMM MODEL
 
+#create log_mass column
+rhs_long$log_mass <- log(rhs_long$mass)
+
+#remove individuals that died
+rhs_lngc <- subset(rhs_long, died.bf5==0)
+
+#subset to only terms used in the model, drop NAs
+rhs_mod <- select(rhs_long, id, shock.stage, instar, log_mass, age)
+rhs_mod <- drop_na(rhs_mod)
+
 #make id a factor so it will work as a random effect in the GAMM model
-rhs_modl$id<-as.factor(rhs_modl$id)
+rhs_mod$id<-as.factor(rhs_mod$id)
 
 
-#run a full GAMM model (with load and age in the same smooth)
-gam_mass_mod<-gam(log_mass ~ s(age, tot.load, by= shock.stage, k=10,bs="ts") + s(id, bs="re") + shock.stage,
-                  method="ML", data=rhs_modl, na.action = na.omit)
+#run a full GAMM model
+gam_mass_mod<-gam(log_mass ~ s(age, by= shock.stage, k=30, bs="ts") + s(id, bs="re") + shock.stage,
+                  method="ML", data=rhs_mod, na.action = na.omit)
 
 anova(gam_mass_mod)
 summary(gam_mass_mod)
 
 
 
-#run a full GAMM model with load and age in separate smooths--no interaction between them
-gam_mass_mod_noint <- gam(log_mass ~ s(age, by=shock.stage, k=10, bs="ts")
-                          + s(tot.load, by=shock.stage, k=10, bs="ts") + s(id, bs="re")
-                          + shock.stage, method="ML", data=rhs_modl, na.action = na.omit)
-
-anova(gam_mass_mod_noint)
-
-anova(gam_mass_mod, gam_mass_mod_noint, test="Chisq")
-AIC(gam_mass_mod, gam_mass_mod_noint)
-
-
 #test model fit
-rhs_modl$gamint_pred <- predict(gam_mass_mod, level=0)
-rhs_modl$gamint_resid <- residuals(gam_mass_mod, level=0)
-
-rhs_modl$gam_pred <- predict(gam_mass_mod_noint, level=0)
-rhs_modl$gam_resid <- residuals(gam_mass_mod_noint, level=0)
+rhs_mod$gam_pred <- predict(gam_mass_mod, level=0)
+rhs_mod$gam_resid <- residuals(gam_mass_mod, level=0)
 
 
-#gam model with int predict fit against actual data
-gamint_pred_fit <- ggplot(rhs_modl, aes(x=age, y=log_mass, color=shock.stage))
-gamint_pred_fit + geom_point(shape=1, size=3
-)+geom_line(data=rhs_modl, aes(x=age, y=gamint_pred)
-)+facet_wrap(~shock.stage)
 
-
-#gam model without in predicted fit against actual data
-gam_pred_fit <- ggplot(rhs_modl, aes(x=age, y=log_mass, color=shock.stage))
+#gam model predict fit against actual data
+gam_pred_fit <- ggplot(rhs_mod, aes(x=age, y=log_mass, group = id, color=shock.stage))
 gam_pred_fit + geom_point(shape=1, size=3
-)+geom_line(data=rhs_modl, aes(x=age, y=gam_pred)
+)+geom_line(data=rhs_mod, aes(x=age, y=gam_pred)
 )+facet_wrap(~shock.stage)
 
 
-
-#gam model with int pred against resid
-gamint_pr_plot <- ggplot(rhs_modl, aes(x=gamint_pred, y=gamint_resid, color=shock.stage))
-gamint_pr_plot + geom_point(size=3, shape=1
-)+geom_hline(aes(yintercept=0),
-             size=1.5, color="black", linetype="dashed")
-
-
-#gam model without int pred against resid
-gam_pr_plot <- ggplot(rhs_modl, aes(x=gam_pred, y=gam_resid, color=shock.stage))
+#gam model pred against resid
+gam_pr_plot <- ggplot(rhs_mod, aes(x=gam_pred, y=gam_resid, color=shock.stage))
 gam_pr_plot + geom_point(size=3, shape=1
 )+geom_hline(aes(yintercept=0),
              size=1.5, color="black", linetype="dashed")
 
 
-#gam model with int residuals against age
-gamint_ra_plot <- ggplot(rhs_modl, aes(x=age, y=gamint_resid, color=shock.stage))
-gamint_ra_plot+geom_point(size=3, shape=1
-)+geom_hline(aes(yintercept=0),
-             size=1.5, color="black", linetype="dashed")
 
-
-
-#gam model without int residuals against age
-gam_ra_plot <- ggplot(rhs_modl, aes(x=age, y=gam_resid, color=shock.stage))
+#gam model residuals against age
+gam_ra_plot <- ggplot(rhs_mod, aes(x=age, y=gam_resid, color=shock.stage))
 gam_ra_plot+geom_point(size=3, shape=1
 )+geom_hline(aes(yintercept=0),
              size=1.5, color="black", linetype="dashed")
 
 
 
-#gam model with int residuals against load
-gamint_rl_plot <- ggplot(rhs_modl, aes(x=tot.load, y=gamint_resid, color=shock.stage))
-gamint_rl_plot+geom_point(size=3, shape=1
+gam.check(gam_mass_mod)
+
+
+
+#---------------------
+
+#removing early shock stage so I can examine the effect of load on host growth
+rhs_ne <- subset(rhs_lngc, shock.stage!="early")
+
+#select columns only used in model, drop NAs
+rhs_ne <- select(rhs_ne, id, shock.stage, tot.load, log_mass, age)
+rhs_ne <- drop_na(rhs_ne)
+
+#make id a factor so it works as a random effect in gamm model
+rhs_ne$id <- as.factor(rhs_ne$id)
+
+
+#run a full GAMM model--load and age in same smooth
+gam_ml_mod<-gam(log_mass ~ s(age, tot.load,  by= shock.stage, bs="ts") + s(id, bs="re") + shock.stage,
+                  method="ML", data=rhs_ne, na.action = na.omit)
+
+anova(gam_ml_mod)
+summary(gam_ml_mod)
+
+
+#run full gamm model--load and age in separate smooths
+gam_ml_noint_mod <- gam(log_mass ~ s(age, by=shock.stage, bs="ts")
+                        + s(tot.load, by = shock.stage, bs="ts") + s(id, bs="re")
+                        + shock.stage, method="ML", data=rhs_ne, na.action = na.omit)
+
+anova(gam_ml_noint_mod)
+summary(gam_ml_noint_mod)
+
+anova(gam_ml_mod, gam_ml_noint_mod, test="Chisq")
+AIC(gam_ml_mod, gam_ml_noint_mod) #no interaction model is much better
+
+
+#test model residuals
+rhs_ne$pred <- predict(gam_ml_noint_mod, level=0)
+rhs_ne$resid <- residuals(gam_ml_noint_mod, level=0)
+
+
+
+#gam model predict fit against actual data
+gamml_pred_fit <- ggplot(rhs_ne, aes(x=age, y=log_mass, group = id, color=shock.stage))
+gamml_pred_fit + geom_point(shape=1, size=3
+)+geom_line(data=rhs_ne, aes(x=age, y=pred)
+)+facet_wrap(~shock.stage)
+
+
+
+#gam model pred against resid
+gamml_pr_plot <- ggplot(rhs_ne, aes(x=pred, y=resid, color=shock.stage))
+gamml_pr_plot + geom_point(size=3, shape=1
 )+geom_hline(aes(yintercept=0),
              size=1.5, color="black", linetype="dashed")
 
 
-#gam model without int residuals against load
-gam_rl_plot <- ggplot(rhs_modl, aes(x=tot.load, y=gam_resid, color=shock.stage))
-gam_rl_plot+geom_point(size=3, shape=1
+
+#gam model residuals against age
+gamml_ra_plot <- ggplot(rhs_ne, aes(x=age, y=resid, color=shock.stage))
+gamml_ra_plot+geom_point(size=3, shape=1
+)+geom_hline(aes(yintercept=0),
+             size=1.5, color="black", linetype="dashed")
+
+
+#gam model residuals against load
+gamml_rl_plot <- ggplot(rhs_ne, aes(x=tot.load, y=resid, color=shock.stage))
+gamml_rl_plot+geom_point(size=3, shape=1
 )+geom_hline(aes(yintercept=0),
              size=1.5, color="black", linetype="dashed")
 
 
 
+
+
+
+#adjusting k values for age smooth
+
+#run full gamm model--load and age in separate smooths
+gam_ml_nointk_mod <- gam(log_mass ~ s(age, by=shock.stage, k=20, bs="ts")
+                        + s(tot.load, by = shock.stage, bs="ts") + s(id, bs="re")
+                        + shock.stage, method="ML", data=rhs_ne, na.action = na.omit)
+
+gam.check(gam_ml_nointk_mod)
 
 
 #----------------------------

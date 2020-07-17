@@ -120,7 +120,7 @@ ws_re_mod_ss <- glmer(cbind(tot.died, num.ecl) ~ + (1|id),
 
 
 
-anova(ws_mod_d_ld, ws_re_mod_ss)
+anova(ws_mod_d, ws_re_mod_ss)
 
 
 
@@ -167,6 +167,71 @@ wems_mod_ss <- glmer(cbind(num.em, tot.unem) ~  (1|id),
                      na.action = na.omit)
 
 anova(wems_mod_d, wems_mod_ss)
+
+#---------------------
+
+#looking at wasp survival without low late heat shock
+rhs_hl <- subset(rhs_ww, hs.cal!="low")
+
+wems_hl_re_mod <- glmer(cbind(num.em, tot.unem) ~ shock.stage * resc.load + (1|id),
+                        family = "binomial",
+                        data = rhs_hl,
+                        na.action = na.omit)
+
+anova(wems_hl_re_mod)
+summary(wems_hl_re_mod)
+
+
+#model selection using dredge() 
+
+#dredge requires dataframe with no NAs--subsetting to only columns in the model
+rhs_hld_em <- select(rhs_hl, id, shock.stage, resc.load, num.em, tot.unem)
+rhs_hld_em <- drop_na(rhs_hld_em)
+
+wems_hl_re_mod_fd <- glmer(cbind(num.em, tot.unem) ~ shock.stage * resc.load + (1|id),
+                           family = "binomial",
+                           data = rhs_hld_em,
+                           na.action = na.fail)
+
+wems_hl_mod_dredge <- dredge(wems_hl_re_mod_fd)
+wems_hl_mod_dredge
+
+
+#best model from dredge:
+wems_hl_re_mod_d <- glmer(cbind(num.em, tot.unem) ~ shock.stage + (1|id),
+                        family = "binomial",
+                        data = rhs_hl,
+                        na.action = na.omit)
+
+
+#test fixed effects by comparing models without term of interest to best model from dredge
+wems_hl_re_mod_ss <- glmer(cbind(num.em, tot.unem) ~ 1 + (1|id),
+                           family = "binomial",
+                           data = rhs_hl,
+                           na.action = na.omit)
+
+
+
+#compare models
+anova(wems_hl_re_mod_d, wems_hl_re_mod_ss)
+
+
+#------------------------------
+
+#analyze effect of the diff temp late shocks on wasp survival
+
+rhs_late <- subset(rhs_ww, shock.stage=="late")
+
+#low late heat shock has better survival than the high 
+wems_late_mod <- glmer(cbind(num.em, tot.unem) ~ hs.cal * resc.load + (1|id),
+                       family = "binomial",
+                       data = rhs_late,
+                       na.action = na.omit)
+
+
+anova(wems_late_mod)
+summary(wems_late_mod)
+
 
 
 #-------------------------
@@ -314,6 +379,101 @@ femmss_re_mod <- lme(ind.fem.mass ~ shock.stage * tot.load,
                      na.action = na.omit)
 anova(femmss_re_mod)
 summary(femmss_re_mod)
+
+
+#-------------------------
+
+#analyzing effects of diff temp of late shock on wasp mass
+#no effect across the whole, but in the summary, the low late heat shock increases mass significantly
+
+rhs_waml <- subset(rhs_wam, shock.stage=="late")
+
+waspmss_late_mod <- lme(ad.mass ~ hs.cal * sex * tot.load,
+                          random = ~1|id,
+                          method = "ML",
+                          data = rhs_waml,
+                          na.action = na.omit)
+
+
+anova(waspmss_late_mod)
+summary(waspmss_late_mod)
+
+
+#-----------------------------
+
+#creating a separate low and high late heat shock levels, incorporate into full analyses
+rhs_ww$shock.stage2 <- ifelse(rhs_ww$shock.stage=="late" & rhs_ww$hs.cal=="low", "late.low",
+                              ifelse(rhs_ww$shock.stage=="late" & rhs_ww$hs.cal=="high", "late.high", 
+                                     ifelse(rhs_ww$shock.stage=="control", "control",
+                                            ifelse(rhs_ww$shock.stage=="mid", "mid", NA))))
+
+
+#analysis of wasp survival to emergence with low and high late heat shock levels
+wems_latehl_mod <- glmer(cbind(num.em, tot.unem) ~ shock.stage2 * resc.load + (1|id),
+                        family = "binomial",
+                        data = rhs_ww,
+                        na.action = na.omit,
+                        control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+
+
+anova(wems_latehl_mod)
+summary(wems_latehl_mod)
+
+
+
+#dredge requires dataframe with no NAs--subsetting to only columns in the model
+rhs_wwhl_em <- select(rhs_ww, id, shock.stage2, resc.load, num.em, tot.unem)
+rhs_wwhl_em <- drop_na(rhs_wwhl_em)
+
+wems_latehl_mod_fd <- glmer(cbind(num.em, tot.unem) ~ shock.stage2 * resc.load + (1|id),
+                           family = "binomial",
+                           data = rhs_wwhl_em,
+                           na.action = na.fail,
+                           control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+
+wems_latehl_mod_dredge <- dredge(wems_latehl_mod_fd)
+wems_latehl_mod_dredge
+
+
+#best model from dredge
+wems_latehl_mod_d <- glmer(cbind(num.em, tot.unem) ~ shock.stage2 + (1|id),
+                           family = "binomial",
+                           data = rhs_wwhl_em,
+                           na.action = na.fail,
+                           control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+
+
+#test fixed effects by comparing model without term of interest to best model from dredge
+wems_latehl_mod_ss <- glmer(cbind(num.em, tot.unem) ~ 1 + (1|id),
+                            family = "binomial",
+                            data = rhs_wwhl_em,
+                            na.action = na.fail,
+                            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+
+
+anova(wems_latehl_mod_d, wems_latehl_mod_ss)
+
+
+
+
+#analyze wasp mass with the 2 levels of the late heat shock
+
+#creating a separate low and high late heat shock levels, incorporate into full analyses
+rhs_wam$shock.stage2 <- ifelse(rhs_wam$shock.stage=="late" & rhs_wam$hs.cal=="low", "late.low",
+                               ifelse(rhs_wam$shock.stage=="late" & rhs_wam$hs.cal=="high", "late.high", 
+                                      ifelse(rhs_wam$shock.stage=="control", "control",
+                                             ifelse(rhs_wam$shock.stage=="mid", "mid", NA))))
+
+
+waspmss_latehl_mod <- lme(ad.mass ~ shock.stage2 * sex * tot.load,
+                      random = ~1|id,
+                      method = "ML",
+                      data = rhs_wam,
+                      na.action = na.omit)
+anova(waspmss_latehl_mod)
+summary(waspmss_latehl_mod)
+
+
 
 
 #----------------------------------

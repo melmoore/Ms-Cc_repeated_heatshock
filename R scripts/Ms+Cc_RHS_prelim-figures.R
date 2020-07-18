@@ -167,7 +167,8 @@ rhs$ps.ecl[rhs$ps.ecl==0.000001000]<-0
 
 #ps.ecl by load
 psecl.plot<-ggplot(rhs, aes(x=tot.load, y=ps.ecl, group=shock.stage, color=shock.stage))
-psecl.plot+geom_point(size=3
+psecl.plot+geom_point(aes(shape=hs.cal),
+                      size=3
 )+geom_smooth(method=lm, se=FALSE,
               size=1.2
 )+scale_y_continuous(limits=c(0,1)
